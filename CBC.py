@@ -1,56 +1,113 @@
-#from Crypto.Cipher import AES
+from Crypto.Cipher import AES
+from Crypto import Random
 import sys
 import struct
 
 def main(argv):
     if len(argv) != 2:
-        print("Usage: ECB.py <filename>")
+        print("Usage: CBC.py <filename>")
         exit(0)
-    open_text_file(argv[1])
-    string = "123456789ABCDEFG"
-    string = add_pad(string)
-    print("string: {}".format(string))
-    print("len:    {}".format(len(string)))
+    if ".bmp" not in argv[1]:
+        encrypt_text_file(argv[1])
+
+
+def encrypt_text_file(filename):
+    text = open_text_file(filename)
+    key = get_key()
+    crypto = AES.new(key, AES.MODE_ECB)
+    encrypt = encrypt_text(text, crypto)
+    print("output: {}".format(encrypt))
+    print("len:    {}".format(len(encrypt)))
+
+
+def encrypt_text(text, crypto):
+    t = b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" # IV
+    blocks = get_blocks(text)
+    for block in blocks:
+        t = encrypt_block(block, crypto, t)
+    return t
+
+
+def get_blocks(text):
+    blocks = []
+    block = []
+    i = 0
+    for letter in text:
+        block.append(letter)
+        i += 1
+        if i == 16:
+            blocks.append("".join(block))
+            block.clear()
+            i = 0
+    if len(block) != 0:
+        blocks.append("".join(block))
+    return blocks
+
+
+def encrypt_block(block, crypto, t):
+    if len(block) > 16 or len(t) > 16:
+        print("block or t is too large, they must be 16 bytes or less")
+        exit(1)
+
+    block = add_pad(bytes(block, "ascii"))
+    new_block = XOR_bytes(block, t)
+    return crypto.encrypt(new_block)
+
+
+def XOR_bytes(bytes1, bytes2):
+    new_bytes = b""
+    for i in range(len(bytes1)):
+        new_bytes = new_bytes + bytes([bytes1[i] ^ bytes2[i]])
+    return new_bytes
+
 
 def open_text_file(filename):
     f = open(filename, "r")
+    text = f.read()
     f.close()
+    return text
+
+
+def get_key():
+    return Random.new().read(16)
+
 
 def add_pad(string):
-    block = list(string)
+    new_string = string
     if len(string) == 1:
-        block.extend(['\x0F','\x0F','\x0F','\x0F','\x0F','\x0F','\x0F','\x0F','\x0F','\x0F','\x0F','\x0F','\x0F','\x0F','\x0F'])
+        new_string = string + b"\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f"
     elif len(string) == 2:
-        block.extend(['\x0E','\x0E','\x0E','\x0E','\x0E','\x0E','\x0E','\x0E','\x0E','\x0E','\x0E','\x0E','\x0E','\x0E'])
+        new_string = string + b"\x0e\x0e\x0e\x0e\x0e\x0e\x0e\x0e\x0e\x0e\x0e\x0e\x0e\x0e"
     elif len(string) == 3:
-        block.extend(['\x0D','\x0D','\x0D','\x0D','\x0D','\x0D','\x0D','\x0D','\x0D','\x0D','\x0D','\x0D','\x0D'])
+        new_string = string + b"\x0d\x0d\x0d\x0d\x0d\x0d\x0d\x0d\x0d\x0d\x0d\x0d\x0d"
     elif len(string) == 4:
-        block.extend(['\x0C','\x0C','\x0C','\x0C','\x0C','\x0C','\x0C','\x0C','\x0C','\x0C','\x0C','\x0C'])
+        new_string = string + b"\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c"
     elif len(string) == 5:
-        block.extend(['\x0B','\x0B','\x0B','\x0B','\x0B','\x0B','\x0B','\x0B','\x0B','\x0B','\x0B'])
+        new_string = string + b"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
     elif len(string) == 6:
-        block.extend(['\x0A','\x0A','\x0A','\x0A','\x0A','\x0A','\x0A','\x0A','\x0A','\x0A'])
+        new_string = string + b"\x0a\x0a\x0a\x0a\x0a\x0a\x0a\x0a\x0a\x0a"
     elif len(string) == 7:
-        block.extend(['\x09','\x09','\x09','\x09','\x09','\x09','\x09','\x09','\x09'])
+        new_string = string + b"\x09\x09\x09\x09\x09\x09\x09\x09\x09"
     elif len(string) == 8:
-        block.extend(['\x08','\x08','\x08','\x08','\x08','\x08','\x08','\x08'])
+        new_string = string + b"\x08\x08\x08\x08\x08\x08\x08\x08"
     elif len(string) == 9:
-        block.extend(['\x07','\x07','\x07','\x07','\x07','\x07','\x07'])
+        new_string = string + b"\x07\x07\x07\x07\x07\x07\x07"
     elif len(string) == 10:
-        block.extend(['\x06','\x06','\x06','\x06','\x06','\x06'])
+        new_string = string + b"\x06\x06\x06\x06\x06\x06"
     elif len(string) == 11:
-        block.extend(['\x05','\x05','\x05','\x05','\x05'])
+        new_string = string + b"\x05\x05\x05\x05\x05"
     elif len(string) == 12:
-        block.extend(['\x04','\x04','\x04','\x04'])
+        new_string = string + b"\x04\x04\x04\x04"
     elif len(string) == 13:
-        block.extend(['\x03','\x03','\x03'])
+        new_string = string + b"\x03\x03\x03"
     elif len(string) == 14:
-        block.extend(['\x02','\x02'])
+        new_string = string + b"\x02\x02"
     elif len(string) == 15:
-        block.extend(['\x01'])
+        new_string = string + b"\x01"
 
-    print("block:  {}".format(block))
-    return "".join(string)
+    print("block:  {}".format(new_string))
+    return new_string
+
 
 
 
