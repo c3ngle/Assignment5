@@ -16,16 +16,23 @@ def encrypt_text_file(filename):
     key = get_key()
     crypto = AES.new(key, AES.MODE_ECB)
     encrypt = encrypt_text(text, crypto)
-    print("output: {}".format(encrypt))
-    print("len:    {}".format(len(encrypt)))
+    decrypt = decrypt_text(encrypt, crypto)
+    print("encrypt: {}".format(encrypt))
+    print("decrypt: {}".format(decrypt))
+
+
+def decrypt_text(text, crypto):
+    print("oof")
 
 
 def encrypt_text(text, crypto):
     t = b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" # IV
+    encrypt = b""
     blocks = get_blocks(text)
     for block in blocks:
         t = encrypt_block(block, crypto, t)
-    return t
+        encrypt = encrypt + t
+    return encrypt
 
 
 def get_blocks(text):
