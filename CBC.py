@@ -22,7 +22,30 @@ def encrypt_text_file(filename):
 
 
 def decrypt_text(text, crypto):
-    print("oof")
+    t = b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    blocks = get_blocks_bytes(text)
+    decrypt = b""
+    for block in blocks:
+        string = crypto.decrypt(block)
+        decrypt = decrypt + XOR_bytes(string, t)
+        t = block
+    return str(decrypt, "ascii")
+
+
+def get_blocks_bytes(text):
+    blocks = []
+    block = b""
+    i = 0
+    for byte in text:
+        block = block + bytes([byte])
+        i += 1
+        if i == 16:
+            blocks.append(block)
+            block = b""
+            i = 0
+    if len(block) != 0:
+        blocks.append(block)
+    return blocks
 
 
 def encrypt_text(text, crypto):
