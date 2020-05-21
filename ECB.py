@@ -5,6 +5,12 @@ import sys
 import struct
 
 def main(argv):
+    #key = b"123456789ABCDEF0"
+    #crypto = AES.new(key, AES.MODE_ECB)
+    #encrypt = crypto.encrypt(b"hello how are u?")
+    #decrypt = crypto.decrypt(encrypt)
+    #print("encrypt: {}".format(encrypt))
+    #print("decryptL {}".format(decrypt))
     if len(argv) != 2:
         print("Usage: ECB.py <filename>")
         exit(0)
@@ -16,9 +22,40 @@ def do_text_file(filename):
     text = open_text_file(filename)
     crypto = AES.new(key, AES.MODE_ECB)
     encrypt = encrypt_text(text, crypto)
+    decrypt = decrypt_text(encrypt, crypto)
     print("key     {}".format(key))
-    print("string: {}".format(encrypt))
-    print("len:    {}".format(len(encrypt)))
+    print("encrypt: {}".format(encrypt))
+    print("decrypt:    {}".format(decrypt))
+
+
+def decrypt_text(text, crypto):
+    blocks = get_blocks_bytes(text)
+    text = b""
+    for block in blocks:
+        text = text + decrypt_block(block, crypto)
+    return str(text, "ascii")
+
+
+def get_blocks_bytes(text):
+    blocks = []
+    block = b""
+    i = 0
+    for byte in text:
+        block = block + bytes([byte])
+        i += 1
+        if i == 16:
+            blocks.append(block)
+            block = b""
+            i = 0
+    if len(block) != 0:
+        blocks.append(block)
+    return blocks
+
+
+
+def decrypt_block(block, crypto):
+    return crypto.decrypt(block)
+
 
 def encrypt_text(text, crypto):
     encrypt = b""
