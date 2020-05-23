@@ -5,14 +5,31 @@ def main():
     key = get_key()
     IV = get_IV()
     crypto = AES.new(key, AES.MODE_ECB)
+    encrypt = submit(crypto, IV)
+    print("encrypt: {}".format(encrypt))
+    valid = verify(encrypt, crypto, IV)
+    print("valid: {}".format(valid))
+
+
+def submit(crypto, IV):
     text = get_text()
     print("text: {}".format(text))
-    #print("encrypt: {}".format(encrypt))
-    #print("decrypt: {}".format(decrypt))
+    encrypt = encrypt_text(text, crypto, IV)
+    return encrypt
+
+def verify(encrypt, crypto, IV):
+    decrypt = decrypt_text(encrypt, crypto, IV)
+    if ";admin=true;" in decrypt:
+        decrypt = URL_decode(decrypt)
+        print("decrypt: {}".format(decrypt))
+        return True
+    decrypt = URL_decode(decrypt)
+    print("decrypt: {}".format(decrypt))
+    return False
 
 
-def decrypt_text(text, crypto):
-    t = b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+def decrypt_text(text, crypto, IV):
+    t = IV
     blocks = get_blocks_bytes(text)
     decrypt = b""
     for block in blocks:
@@ -37,8 +54,8 @@ def get_blocks_bytes(text):
         blocks.append(block)
     return blocks
 
-def encrypt_text(text, crypto):
-    t = b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" # IV
+def encrypt_text(text, crypto, IV):
+    t = IV
     encrypt = b""
     blocks = get_blocks(text)
     for block in blocks:
@@ -77,7 +94,8 @@ def XOR_bytes(bytes1, bytes2):
     new_bytes = b""
     for i in range(len(bytes1)):
         new_bytes = new_bytes + bytes([bytes1[i] ^ bytes2[i]])
-    return new_bytesdef
+    return new_bytes
+
 
 def get_text():
     text = input("enter string: ")
@@ -85,17 +103,30 @@ def get_text():
     new_text = "userid=456;userdata=" + text + ";session-id=31337"
     return new_text;
 
+
 def URL_encode(text):
     out_text = text
     if ";" in text:
         i = text.find(";")
-        #text = text + "found i {}".format(i)
-        new_text = text[:i] + "%3B" + text[i+1:]
-        out_text = URL_encode(new_text)
+        new_text = text[:i] + "%3B" + text[i+1:] # removes the ; and replaces with %3B
+        out_text = URL_encode(new_text) # calls again to check if there are more ; or =
     if "=" in text:
         i = text.find("=")
-        new_text = text[:i] + "%3D" + text[i+1:]
-        out_text = URL_encode(new_text)
+        new_text = text[:i] + "%3D" + text[i+1:] # removes the = replaces with %3D
+        out_text = URL_encode(new_text) # calls again to check if there are more =
+    return out_text
+
+
+def URL_decode(text):
+    out_text = text
+    if "%3B" in text:
+        i = text.find("%3B")
+        new_text = text[:i] + ";" + text[i+3:]
+        out_text = URL_decode(new_text)
+    if "%3D" in text:
+        i = text.find("%3D")
+        new_text = text[:i] + "=" + text[i+3:]
+        out_text = URL_decode(new_text)
     return out_text
 
 
@@ -140,7 +171,7 @@ def add_pad(string):
     elif len(string) == 15:
         new_string = string + b"\x01"
 
-    print("block:  {}".format(new_string))
+    #print("block:  {}".format(new_string))
     return new_string
 
 
